@@ -43,6 +43,9 @@ Camera cam;
 Texture2D* texture;
 RenderTexture2D renderTexture;
 
+Texture2D* textureTarget;
+RenderTexture2D renderTextureTarget;
+
 float lastFrameTime = 0.0f;
 float deltaTime = 0.0f;
 float progress = 0.0f;
@@ -188,8 +191,10 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
         ImGuiWindowFlags_NoScrollbar |
         ImGuiWindowFlags_NoScrollWithMouse
     );
-    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight()));
-    editor.Render("Code Editor");
+    ImGui::SetWindowPos(ImVec2(0, 0));
+    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() * 4/5.0));
+    editor.Render("Editor");
+
     ImGui::End();
     ImGui::Begin("compile", nullptr,
         ImGuiWindowFlags_NoTitleBar |
@@ -209,7 +214,7 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
         progress = 0.0f;
         
         // check compiler err
-         if (_log.find("error") == std::string::npos) {
+         if (_log.find("ERROR") == std::string::npos) {
              
             for (size_t y = 0; y < 11; y++) {
                 for (size_t x = 0; x < 11; x++) {
@@ -237,6 +242,25 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
     }
 
     ImGui::PopFont();
+    ImGui::End();
+
+    ImGui::Begin("console", nullptr,
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoScrollWithMouse
+    );
+    ImGui::SetWindowPos(ImVec2(0, window.getWindowHeight() * 4/5.0));
+    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() * 1/5.0));
+
+    ImGui::BeginChild("Compiler Output");
+    ImGui::PushFont(fontSml);
+    RenderAnsiColoredText(_log);
+    ImGui::PopFont();
+    ImGui::EndChild();
+
     ImGui::End();
 }
 
@@ -290,10 +314,6 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, Camera& cam
         }
     }
     
-
-
-
-
     renderTexture.unbind();
 
 
@@ -312,11 +332,6 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, Camera& cam
     ImGui::Text("Display");
     ImVec2 size = ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() / 2);
     ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0)); // Flip UVs for correct orientation
-    ImGui::BeginChild("Compiler Output");
-    ImGui::PushFont(fontSml);
-    RenderAnsiColoredText(_log);
-    ImGui::PopFont();
-    ImGui::EndChild();
     
     
     ImGui::End();
@@ -373,6 +388,10 @@ int main(int argc, char* argv[])
     texture = new Texture2D(800, 600, nullptr);
     texture->generate_texture();
     renderTexture.set_texture(texture);
+
+    textureTarget = new Texture2D(800, 600, nullptr);
+    textureTarget->generate_texture();
+    renderTextureTarget.set_texture(textureTarget);
     
 
     // init_free_type();
@@ -442,6 +461,7 @@ int main(int argc, char* argv[])
     // destroy_free_type();
     delete shader;
     delete texture;
+    delete textureTarget;
     DestroyImgui();
 
     return 0;
