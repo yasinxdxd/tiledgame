@@ -1,0 +1,101 @@
+x: int;
+y: int;
+z: int;
+
+RED: int = 0xbf212fFF;
+GREEN: int = 0x27b376ff;
+BLUE: int = 0x264b96ff;
+YELLOW: int = 0xf9a73eff;
+PINK: int = 0xF88379ff;
+EMPTY: int = 0x00000000;
+WHITE: int = 0xEEEEEEFF;
+
+func abs(a: int): int {
+	if (a < 0) {
+		return -a;
+	}
+	return a;
+}
+
+func main(argc: int): int {
+	d: int = x*x + y*y + z*z;
+	if (x == 0 && z == 0) {return WHITE;}
+	if (d > 25) {
+		if ((abs(x) <= 1 && abs(z) <= 1)
+		|| (abs(x) <= 1 && abs(y) <= 1)
+		|| (abs(y) <= 1 && abs(z) <= 1)) {
+			
+			return GREEN;
+		}
+		if (abs(z) > 3) {return EMPTY;}
+		myColor: int = (abs(x) << 2)*PINK;
+		return myColor;
+	} else if (x == 0 && y == 0
+			|| x == 0 && z == 0
+			|| y == 0 && z == 0) {
+		return YELLOW;
+
+	}
+	return EMPTY;
+	
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

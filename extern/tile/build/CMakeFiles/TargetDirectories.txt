@@ -1,0 +1,3 @@
+C:/Users/Lenovo/Desktop/game/tiled/extern/tile/build/CMakeFiles/TiledGameTVM.dir
+C:/Users/Lenovo/Desktop/game/tiled/extern/tile/build/CMakeFiles/edit_cache.dir
+C:/Users/Lenovo/Desktop/game/tiled/extern/tile/build/CMakeFiles/rebuild_cache.dir

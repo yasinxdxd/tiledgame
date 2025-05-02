@@ -1,0 +1,19 @@
+LIBRARY libTiledGameTVM
+EXPORTS
+    tvm_load_program_from_memory
+    tvm_save_program_to_memory
+    tvm_load_program_from_file
+    tvm_save_program_to_file
+    exception_to_cstr
+    tvm_init
+    tvm_destroy
+    tvm_exec_opcode
+    tvm_frame_init
+    tvm_gframe_init
+    tvm_frame_next
+    tvm_frame_prev
+    tvm_frame_free
+    tvm_gframe_free
+    tvm_run
+    tvm_stack_dump
+    tci_native_call

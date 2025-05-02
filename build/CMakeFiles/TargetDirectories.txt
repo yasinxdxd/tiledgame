@@ -1,0 +1,3 @@
+C:/Users/Lenovo/Desktop/game/tiled/build/CMakeFiles/TiledGame.dir
+C:/Users/Lenovo/Desktop/game/tiled/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Lenovo/Desktop/game/tiled/build/CMakeFiles/ZERO_CHECK.dir

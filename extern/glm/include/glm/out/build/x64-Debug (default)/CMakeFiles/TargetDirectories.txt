@@ -1,0 +1,2 @@
+C:/Users/Lenovo/Desktop/Coding/OpenGL Learning/Dependencies/glm/glm/out/build/x64-Debug (default)/CMakeFiles/edit_cache.dir
+C:/Users/Lenovo/Desktop/Coding/OpenGL Learning/Dependencies/glm/glm/out/build/x64-Debug (default)/CMakeFiles/rebuild_cache.dir
