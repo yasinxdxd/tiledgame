@@ -312,7 +312,7 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
             for (size_t z = 0; z < 11; z++) {
                 auto& obj = objects[y * 121 + x * 11 + z];
                 auto [r, g, b, a] = colorFromUInt(obj.color);
-                obj.setPos(glm::vec3(float(x - 5.0) * 2.1f, float(y - 5.0) * 2.1f, float(z - 5.0) * 2.1f));
+                obj.setPos(glm::vec3(float(x - 5.0) * 2.f, float(y - 5.0) * 2.f, float(z - 5.0) * 2.f));
                 // obj.setPos(glm::vec3(0));
                 if (obj.color != 0) {
                     render(obj.cube, 36, shader, [&](Shader* shader) {
@@ -350,7 +350,7 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
             for (size_t z = 0; z < 11; z++) {
                 auto& obj = objectsTarget[y * 121 + x * 11 + z];
                 auto [r, g, b, a] = colorFromUInt(obj.color);
-                obj.setPos(glm::vec3(float(x - 5.0) * 2.1f, float(y - 5.0) * 2.1f, float(z - 5.0) * 2.1f));
+                obj.setPos(glm::vec3(float(x - 5.0) * 2.f, float(y - 5.0) * 2.f, float(z - 5.0) * 2.f));
                 // obj.setPos(glm::vec3(0));
                 if (obj.color != 0) {
                     render(obj.cube, 36, shader, [&](Shader* shader) {
