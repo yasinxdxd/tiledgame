@@ -24,6 +24,7 @@
 #include <glfw/glfw3.h>
 #include <chrono>
 #include <thread>
+#include <time.h>
 
 extern "C" {
     #include <tvm/tvm.h>
@@ -50,7 +51,7 @@ RenderTexture2D renderTextureTarget;
 
 float lastFrameTime = 0.0f;
 float deltaTime = 0.0f;
-float progress = 0.0f;
+float progresses[11*11*11] = {0.f};
 
 float rnds[11*11*11];
 
@@ -234,7 +235,7 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
         save_string_to_file("tiledgame.tile", editor.GetText());
         
         _log = RunCommandAndCaptureOutput("tile tiledgame.tile -o tiledgame");
-        progress = 0.0f;
+        memset(progresses, 0.f, sizeof(float) * 11*11*11);
         
         // check compiler err
          if (_log.find("ERROR") == std::string::npos) {
@@ -254,7 +255,7 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
                         obj.color = vm->stack[vm->sp - 1].ui32;
                         tvm_destroy(vm);
 
-                        rnds[y * 121 + x * 11 + z] = (rand() % 100) / 400.f;
+                        rnds[y * 121 + x * 11 + z] = (rand() % 50) / 100.f + 0.7f;
                     }
                 }
             }
@@ -303,7 +304,7 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
     // game
     renderTexture.bind();
     glViewport(0, 0, renderTexture.get_texture()->getWidth(), renderTexture.get_texture()->getHeight());
-    if (darkMode) window.clear();
+    if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
     else window.clear(0.9, 0.9, 0.9, 1);
 
     for (size_t y = 0; y < 11; y++) {
@@ -315,12 +316,16 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
                 // obj.setPos(glm::vec3(0));
                 if (obj.color != 0) {
                     render(obj.cube, 36, shader, [&](Shader* shader) {
+                        float& progress = progresses[y * 121 + x * 11 + z];
                         if (progress < 1.0f) {
-                            obj.model = glm::scale(obj.model, glm::vec3(progress + rnds[y * 121 + x * 11 + z]));
-                            shader->set<float, 1>("u_progress", progress);
-                            progress += deltaTime * 0.0002 * (x + y + z); // or some time-based increment
+                            obj.model = glm::scale(obj.model, glm::vec3(progress));
+                            progress += (deltaTime + rnds[y * 121 + x * 11 + z]) * 0.1; // or some time-based increment
+                            // std::cout << progress << std::endl;
+                        } else {
+                            progress = 1.f;
                         }
-                        
+
+                        shader->set<float, 1>("u_progress", progress);
                         shader->set_matrix("m_model", obj.model);
                         shader->set_matrix("m_view", cam.view);
                         shader->set_matrix("m_projection", cam.projection);
@@ -337,7 +342,7 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
     // target
     renderTextureTarget.bind();
     glViewport(0, 0, renderTextureTarget.get_texture()->getWidth(), renderTextureTarget.get_texture()->getHeight());
-    if (darkMode) window.clear();
+    if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
     else window.clear(0.9, 0.9, 0.9, 1);
 
     for (size_t y = 0; y < 11; y++) {
@@ -349,17 +354,11 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
                 // obj.setPos(glm::vec3(0));
                 if (obj.color != 0) {
                     render(obj.cube, 36, shader, [&](Shader* shader) {
-                        if (progress < 1.0f) {
-                            obj.model = glm::scale(obj.model, glm::vec3(progress + rnds[y * 121 + x * 11 + z]));
-                            shader->set<float, 1>("u_progress", progress);
-                            progress += deltaTime * 0.0002 * (x + y + z); // or some time-based increment
-                        }
-                        
+                        shader->set<float, 1>("u_progress", 1.f);
                         shader->set_matrix("m_model", obj.model);
                         shader->set_matrix("m_view", cam.view);
                         shader->set_matrix("m_projection", cam.projection);
                         shader->set<float, 4>("u_color", r, g, b, a);
-
                     }, GL_TRIANGLES);
                 }
             }
@@ -449,6 +448,8 @@ int main(int argc, char* argv[])
     yt2d::Window window("Tiled", 1280, 720);
     read_file_to_string("tiledgame.tile", code_buffer_str);
 
+    srand(time(NULL));
+
     InitImgui(window);
     InitEditor();
     
@@ -493,7 +494,7 @@ int main(int argc, char* argv[])
 
         window.pollEvent();
 
-        cam.move();
+        cam.move(window);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -505,7 +506,7 @@ int main(int argc, char* argv[])
             
         ImGui::Render();
         
-        if (darkMode) window.clear();
+        if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
         else window.clear(0.9, 0.9, 0.9, 1);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

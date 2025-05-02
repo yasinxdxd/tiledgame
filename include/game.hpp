@@ -27,25 +27,27 @@ struct Camera
         updateView();
     }
 
-    void move() {
+    void move(yt2d::Window& window) {
         // Orbit with right-click drag
         if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
-            ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-            ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-
-            float sensitivity = 0.005f;
-            yaw   += delta.x * sensitivity;
-            pitch += delta.y * sensitivity;
-
-            // Clamp pitch to avoid flipping
-            pitch = glm::clamp(pitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
+            if (ImGui::GetMousePos().x > window.getWindowWidth() / 2) {
+                ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
+                ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
+    
+                float sensitivity = 0.005f;
+                yaw   += delta.x * sensitivity;
+                pitch += delta.y * sensitivity;
+                // Clamp pitch to avoid flipping
+                pitch = glm::clamp(pitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
+            }
         }
 
-        // Zoom with mouse wheel
-        if (g_scroll_delta != 0.0f) {
-            distance -= g_scroll_delta * distance * 0.1f;
-            distance = glm::clamp(distance, 0.1f, 10000.0f);
-            g_scroll_delta = 0.0f; // reset after consuming
+        if (ImGui::GetMousePos().x > window.getWindowWidth() / 2) {
+            if (g_scroll_delta != 0.0f) {
+                distance -= g_scroll_delta * distance * 0.1f;
+                distance = glm::clamp(distance, 0.1f, 10000.0f);
+                g_scroll_delta = 0.0f; // reset after consuming
+            }
         }
 
         updateView();
