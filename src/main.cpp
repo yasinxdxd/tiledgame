@@ -30,6 +30,8 @@ extern "C" {
 }
 
 
+bool darkMode = false;
+
 ImFont* fontBig;
 ImFont* fontSml;
 
@@ -74,6 +76,27 @@ bool save_string_to_file(const std::string& path, const std::string& content) {
     return file.good();
 }
 
+
+void ToggleButton(const char* str_id, bool* v)
+{
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    float height = ImGui::GetFrameHeight();
+    float width = height * 1.55f;
+    float radius = height * 0.50f;
+
+    if (ImGui::InvisibleButton(str_id, ImVec2(width, height)))
+        *v = !*v;
+    ImU32 col_bg;
+    if (ImGui::IsItemHovered())
+        col_bg = *v ? IM_COL32(145+20, 211, 68+20, 255) : IM_COL32(218-20, 218-20, 218-20, 255);
+    else
+        col_bg = *v ? IM_COL32(145, 211, 68, 255) : IM_COL32(218, 218, 218, 255);
+
+    draw_list->AddRectFilled(p, ImVec2(p.x + width, p.y + height), col_bg, height * 0.5f);
+    draw_list->AddCircleFilled(ImVec2(*v ? (p.x + width - radius) : (p.x + radius), p.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
+}
 
 void InitEditor() {
     editor.SetLanguageDefinition(TextEditor::LanguageDefinition::C());
@@ -204,10 +227,10 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
         ImGuiWindowFlags_NoScrollbar |
         ImGuiWindowFlags_NoScrollWithMouse
     );
-    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, 66));
+    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, 50));
     ImGui::SetWindowPos(ImVec2(window.getWindowWidth() / 2, 0));
     ImGui::PushFont(fontSml);
-    if (ImGui::Button("compile", ImVec2(64, 36))) {
+    if (ImGui::Button("run", ImVec2(48, 36))) {
         save_string_to_file("tiledgame.tile", editor.GetText());
         
         _log = RunCommandAndCaptureOutput("tile tiledgame.tile -o tiledgame");
@@ -238,6 +261,8 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
             
             // std::cout << vm->gframe->global_vars[0].i32 << std::endl;
         }
+
+        // TODO: check if objectstarget and objects are matching!
 
     }
 
@@ -273,20 +298,13 @@ std::tuple<float, float, float, float> colorFromUInt(uint32_t color) {
 }
 
 
-void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, Camera& cam) {
+void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget, Camera& cam) {
 
+    // game
     renderTexture.bind();
     glViewport(0, 0, renderTexture.get_texture()->getWidth(), renderTexture.get_texture()->getHeight());
-    window.clear(0.9, 0.9, 0.9, 1);
-
-    // glEnable(GL_CULL_FACE); // Enable back-face culling
-    // glCullFace(GL_BACK);
-    // glFrontFace(GL_CCW);
-    
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // glDepthFunc(GL_LESS);
+    if (darkMode) window.clear();
+    else window.clear(0.9, 0.9, 0.9, 1);
 
     for (size_t y = 0; y < 11; y++) {
         for (size_t x = 0; x < 11; x++) {
@@ -313,8 +331,41 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, Camera& cam
             }
         }
     }
-    
     renderTexture.unbind();
+
+
+    // target
+    renderTextureTarget.bind();
+    glViewport(0, 0, renderTextureTarget.get_texture()->getWidth(), renderTextureTarget.get_texture()->getHeight());
+    if (darkMode) window.clear();
+    else window.clear(0.9, 0.9, 0.9, 1);
+
+    for (size_t y = 0; y < 11; y++) {
+        for (size_t x = 0; x < 11; x++) {
+            for (size_t z = 0; z < 11; z++) {
+                auto& obj = objectsTarget[y * 121 + x * 11 + z];
+                auto [r, g, b, a] = colorFromUInt(obj.color);
+                obj.setPos(glm::vec3(float(x - 5.0) * 2.1f, float(y - 5.0) * 2.1f, float(z - 5.0) * 2.1f));
+                // obj.setPos(glm::vec3(0));
+                if (obj.color != 0) {
+                    render(obj.cube, 36, shader, [&](Shader* shader) {
+                        if (progress < 1.0f) {
+                            obj.model = glm::scale(obj.model, glm::vec3(progress + rnds[y * 121 + x * 11 + z]));
+                            shader->set<float, 1>("u_progress", progress);
+                            progress += deltaTime * 0.0002 * (x + y + z); // or some time-based increment
+                        }
+                        
+                        shader->set_matrix("m_model", obj.model);
+                        shader->set_matrix("m_view", cam.view);
+                        shader->set_matrix("m_projection", cam.projection);
+                        shader->set<float, 4>("u_color", r, g, b, a);
+
+                    }, GL_TRIANGLES);
+                }
+            }
+        }
+    }
+    renderTextureTarget.unbind();
 
 
     ImGui::Begin("game", nullptr,
@@ -325,15 +376,37 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, Camera& cam
         ImGuiWindowFlags_NoScrollbar |
         ImGuiWindowFlags_NoScrollWithMouse
     );
-    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() - 66));
-    ImGui::SetWindowPos(ImVec2(window.getWindowWidth() / 2, 66));
+    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() - 50));
+    ImGui::SetWindowPos(ImVec2(window.getWindowWidth() / 2, 50));
 
-    ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTexture.get_texture()));
-    ImGui::Text("Display");
-    ImVec2 size = ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() / 2);
-    ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0)); // Flip UVs for correct orientation
+    {
+        ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTexture.get_texture()));
+        ImGui::Text("Display");
+        ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
+        ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0)); // Flip UVs for correct orientation
+    }
+
+    {
+        ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTextureTarget.get_texture()));
+        ImGui::Text("Target");
+        ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
+        ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0));
+    }
     
-    
+    ImGui::BeginChild("dark-mode-child");
+        ImGui::PushFont(fontSml);
+        ImGui::Text("dark-mode");
+        ImGui::SameLine();
+        ToggleButton("dark-mode", &darkMode);
+        if (darkMode) {
+            editor.SetPalette(editor.GetDarkPalette());
+            ImGui::StyleColorsDark();
+        } else {
+            editor.SetPalette(editor.GetLightPalette());
+            ImGui::StyleColorsLight();
+        }
+        ImGui::PopFont();
+        ImGui::EndChild();
     ImGui::End();
 }
 
@@ -385,11 +458,11 @@ int main(int argc, char* argv[])
     shader->load_shader_code("shaders/batch_renderer.frag", Shader::ShaderCodeType::FRAGMENT_SHADER);
     glcompiler::compile_and_attach_shaders(shader);
 
-    texture = new Texture2D(800, 600, nullptr);
+    texture = new Texture2D(640, 480, nullptr);
     texture->generate_texture();
     renderTexture.set_texture(texture);
 
-    textureTarget = new Texture2D(800, 600, nullptr);
+    textureTarget = new Texture2D(640, 480, nullptr);
     textureTarget->generate_texture();
     renderTextureTarget.set_texture(textureTarget);
     
@@ -408,6 +481,7 @@ int main(int argc, char* argv[])
 
 
     std::vector<GameObj> objects(11*11*11);
+    std::vector<GameObj> objectsTarget(11*11*11);
 
     const float targetFrameTime = 1.0f / 60.0f;
 
@@ -426,12 +500,14 @@ int main(int argc, char* argv[])
         ImGui::NewFrame();
 
         
-        RenderGame(window, objects, cam);
+        RenderGame(window, objects, objectsTarget, cam);
         RenderEditor(window, objects);
             
         ImGui::Render();
-            
-        window.clear(0.9, 0.9, 0.9, 1);
+        
+        if (darkMode) window.clear();
+        else window.clear(0.9, 0.9, 0.9, 1);
+
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 
