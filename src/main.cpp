@@ -56,7 +56,6 @@ float progresses[11*11*11] = {0.f};
 
 int level = 1;
 bool youWinLevel = false;
-bool levelAdvanceTriggered = false;
 float winTime = 0.0f;
 
 float rnds[11*11*11];
@@ -236,11 +235,10 @@ void LoadLevel(std::vector<GameObj>& objectTargets, int level) {
 }
 
 void YouWinAnimationAndNextLevel(std::vector<GameObj>& objectTargets) {
-    if (youWinLevel && !levelAdvanceTriggered) {
+    if (youWinLevel) {
         float currentTime = glfwGetTime();
         if (currentTime - winTime >= 3.0f) { // Wait for 3 seconds
             LoadLevel(objectTargets, ++level);
-            levelAdvanceTriggered = true;
             youWinLevel = false;
         } else {
             cam.yaw += 0.01;

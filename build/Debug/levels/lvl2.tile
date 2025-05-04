@@ -1,22 +1,4 @@
-x: int;
-y: int;
-z: int;
-
-RED: int = 0xbf212fFF;
-GREEN: int = 0x27b376ff;
-BLUE: int = 0x264b96ff;
-YELLOW: int = 0xf9a73eff;
-PINK: int = 0xF88379ff;
-EMPTY: int = 0x00000000;
-WHITE: int = 0xEEEEEEFF;
-BROWN: int = 0x964B00FF;
-
-func abs(a: int): int {
-	if (a < 0) {
-		return -a;
-	}
-	return a;
-}
+import "../tiled.tile";
 
 func main(argc: int): int {
 	if (y == -5) {return BROWN;}
