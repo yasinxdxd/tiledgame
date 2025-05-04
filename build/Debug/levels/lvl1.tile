@@ -1,0 +1,40 @@
+x: int;
+y: int;
+z: int;
+
+RED: int = 0xbf212fFF;
+GREEN: int = 0x27b376ff;
+BLUE: int = 0x264b96ff;
+YELLOW: int = 0xf9a73eff;
+PINK: int = 0xF88379ff;
+EMPTY: int = 0x00000000;
+WHITE: int = 0xEEEEEEFF;
+GRAY: int = 0x888888FF;
+BROWN: int = 0x964B00FF;
+
+func abs(a: int): int {
+	if (a < 0) {
+		return -a;
+	}
+	return a;
+}
+
+func main(argc: int): int {
+
+	// checker shapes
+	if (y == -5 && (x + z) % 2 != 0) {return BROWN;}
+	if (y == -5 && (x + z) % 2 == 0) {return GREEN;}
+	if (y == -4 && (x + z) % 2 == 0) {return GREEN;}
+	
+	
+	// tree leafs
+	d: int = (x+2)*(x+2) + (y - 3)*(y - 3) + (z+2)*(z+2);
+	if (d < 9) {return GREEN;}
+	// tree trunk
+	if (x == -2 && z == -2) {return BROWN;}
+	
+	
+	return EMPTY;
+}
+
+
