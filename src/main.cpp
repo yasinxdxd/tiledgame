@@ -49,9 +49,15 @@ RenderTexture2D renderTexture;
 Texture2D* textureTarget;
 RenderTexture2D renderTextureTarget;
 
+const float targetFrameTime = 1.0f / 60.0f;
 float lastFrameTime = 0.0f;
 float deltaTime = 0.0f;
 float progresses[11*11*11] = {0.f};
+
+int level = 1;
+bool youWinLevel = false;
+bool levelAdvanceTriggered = false;
+float winTime = 0.0f;
 
 float rnds[11*11*11];
 
@@ -206,7 +212,43 @@ void RenderAnsiColoredText(const std::string& ansiText) {
     }
 }
 
-void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
+void LoadLevel(std::vector<GameObj>& objectTargets, int level) {
+    std::string lvlName = std::string("levels/lvl") + std::to_string(level) + std::string(".bin");
+    for (size_t y = 0; y < 11; y++) {
+        for (size_t x = 0; x < 11; x++) {
+            for (size_t z = 0; z < 11; z++) {
+                tvm_t* vm = tvm_init();
+                tvm_load_program_from_file(vm, lvlName.c_str());
+                vm->gframe->global_vars[0].i32 = (x - 5);
+                vm->gframe->global_vars[1].i32 = (y - 5);
+                vm->gframe->global_vars[2].i32 = (z - 5);
+
+                tvm_run(vm);
+                
+                auto& obj = objectTargets[y * 121 + x * 11 + z];
+                obj.color = vm->stack[vm->sp - 1].ui32;
+                tvm_destroy(vm);
+
+                rnds[y * 121 + x * 11 + z] = (rand() % 50) / 100.f + 0.7f;
+            }
+        }
+    }
+}
+
+void YouWinAnimationAndNextLevel(std::vector<GameObj>& objectTargets) {
+    if (youWinLevel && !levelAdvanceTriggered) {
+        float currentTime = glfwGetTime();
+        if (currentTime - winTime >= 3.0f) { // Wait for 3 seconds
+            LoadLevel(objectTargets, ++level);
+            levelAdvanceTriggered = true;
+            youWinLevel = false;
+        } else {
+            cam.yaw += 0.01;
+        }
+    }
+}
+
+void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectTargets) {
     ImGui::Begin("code", nullptr,
         ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize |
@@ -238,7 +280,7 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
         memset(progresses, 0.f, sizeof(float) * 11*11*11);
         
         // check compiler err
-         if (_log.find("ERROR") == std::string::npos) {
+        if (_log.find("ERROR") == std::string::npos) {
              
             for (size_t y = 0; y < 11; y++) {
                 for (size_t x = 0; x < 11; x++) {
@@ -259,11 +301,13 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects) {
                     }
                 }
             }
-            
-            // std::cout << vm->gframe->global_vars[0].i32 << std::endl;
         }
 
-        // TODO: check if objectstarget and objects are matching!
+        // it checks if all the values are the same!
+        if (objectTargets == objects && !youWinLevel) {
+            youWinLevel = true;
+            winTime = glfwGetTime(); // Store the current time (in seconds)
+        }
 
     }
 
@@ -298,6 +342,46 @@ std::tuple<float, float, float, float> colorFromUInt(uint32_t color) {
     return {r, g, b, a};
 }
 
+ImVec4 IntToImVec4LittleEndian(unsigned int color) {
+    auto [r, g, b, a] = colorFromUInt(color);
+    return ImVec4(a, b, g, r);
+}
+
+void ShowColorSquaresWindow(yt2d::Window& window) // assuming 'window' is passed in
+{
+    ImGui::BeginChild("ColorSquares", ImVec2(128, 0), true, ImGuiWindowFlags_NoScrollbar);
+    {
+        struct ColorInfo {
+            const char* name;
+            ImVec4 color;
+        };
+
+        ColorInfo colors[] = {
+            {"RED", IntToImVec4LittleEndian(0xbf212fFF)},
+            {"GREEN", IntToImVec4LittleEndian(0x27b376ff)},
+            {"BLUE", IntToImVec4LittleEndian(0x264b96ff)},
+            {"YELLOW", IntToImVec4LittleEndian(0xf9a73eff)},
+            {"PINK", IntToImVec4LittleEndian(0xF88379ff)},
+            {"EMPTY", IntToImVec4LittleEndian(0x00000000)},
+            {"WHITE", IntToImVec4LittleEndian(0xEEEEEEFF)},
+            {"BROWN", IntToImVec4LittleEndian(0x964B00FF)},
+        };
+
+        ImVec2 square_size(20, 20);
+
+        for (const auto& color : colors)
+        {
+            ImGui::PushID(color.name);
+            ImGui::ColorButton("##color", color.color, ImGuiColorEditFlags_NoTooltip, square_size);
+            ImGui::SameLine();
+            ImGui::Text("%s", color.name);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", color.name);
+            ImGui::PopID();
+        }
+    }
+    ImGui::EndChild();
+}
 
 void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget, Camera& cam) {
 
@@ -313,7 +397,7 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
                 auto& obj = objects[y * 121 + x * 11 + z];
                 auto [r, g, b, a] = colorFromUInt(obj.color);
                 obj.setPos(glm::vec3(float(x - 5.0) * 2.f, float(y - 5.0) * 2.f, float(z - 5.0) * 2.f));
-                // obj.setPos(glm::vec3(0));
+
                 if (obj.color != 0) {
                     render(obj.cube, 36, shader, [&](Shader* shader) {
                         float& progress = progresses[y * 121 + x * 11 + z];
@@ -351,7 +435,7 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
                 auto& obj = objectsTarget[y * 121 + x * 11 + z];
                 auto [r, g, b, a] = colorFromUInt(obj.color);
                 obj.setPos(glm::vec3(float(x - 5.0) * 2.f, float(y - 5.0) * 2.f, float(z - 5.0) * 2.f));
-                // obj.setPos(glm::vec3(0));
+
                 if (obj.color != 0) {
                     render(obj.cube, 36, shader, [&](Shader* shader) {
                         shader->set<float, 1>("u_progress", 1.f);
@@ -378,22 +462,20 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
     ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() - 50));
     ImGui::SetWindowPos(ImVec2(window.getWindowWidth() / 2, 50));
 
+    ImGui::BeginChild("RenderSection", ImVec2(window.getWindowWidth() / 2 - 128, 0), false);
     {
         ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTexture.get_texture()));
         ImGui::Text("Display");
         ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
         ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0)); // Flip UVs for correct orientation
     }
-
     {
         ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTextureTarget.get_texture()));
         ImGui::Text("Target");
         ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
         ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0));
     }
-    
-    ImGui::BeginChild("dark-mode-child");
-        ImGui::PushFont(fontSml);
+    ImGui::PushFont(fontSml);
         ImGui::Text("dark-mode");
         ImGui::SameLine();
         ToggleButton("dark-mode", &darkMode);
@@ -404,8 +486,12 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
             editor.SetPalette(editor.GetLightPalette());
             ImGui::StyleColorsLight();
         }
-        ImGui::PopFont();
-        ImGui::EndChild();
+    ImGui::PopFont();
+    ImGui::EndChild();
+    
+    ImGui::SameLine();
+    ShowColorSquaresWindow(window);
+
     ImGui::End();
 }
 
@@ -441,6 +527,53 @@ void DestroyImgui() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+}
+
+void RenderAll(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget) {
+    float currentFrameTime = glfwGetTime();
+    deltaTime = currentFrameTime - lastFrameTime;
+    lastFrameTime = currentFrameTime;
+
+    window.pollEvent();
+
+    cam.move(window);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    
+    RenderGame(window, objects, objectsTarget, cam);
+    RenderEditor(window, objects, objectsTarget);
+        
+    ImGui::Render();
+    
+    if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
+    else window.clear(0.9, 0.9, 0.9, 1);
+
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+
+    // fontAtlas->bind();
+    // render(textQuad, 6, shader, [&](Shader* shader) {
+    //     shader->set_matrix("m_model", glm::mat4(1.0));
+    //     shader->set_matrix("m_view", glm::mat4(1.0));
+    //     shader->set_matrix("m_projection", cam.projection);
+        // shader->set<float, 4>("u_color", 1, 1, 1, 1);
+        // shader->set<int, 1>("u_texture", 0);
+    // }, GL_TRIANGLES);
+    // fontAtlas->unbind();
+
+
+    window.display();
+
+
+    // --- Frame limiting ---
+    float frameTime = glfwGetTime() - currentFrameTime;
+    if (frameTime < targetFrameTime) {
+        float sleepTime = targetFrameTime - frameTime;
+        std::this_thread::sleep_for(std::chrono::duration<float>(sleepTime));
+    }
 }
 
 int main(int argc, char* argv[])
@@ -484,54 +617,11 @@ int main(int argc, char* argv[])
     std::vector<GameObj> objects(11*11*11);
     std::vector<GameObj> objectsTarget(11*11*11);
 
-    const float targetFrameTime = 1.0f / 60.0f;
+    LoadLevel(objectsTarget, level);
 
     while (!window.isClose()) {
-
-        float currentFrameTime = glfwGetTime();
-        deltaTime = currentFrameTime - lastFrameTime;
-        lastFrameTime = currentFrameTime;
-
-        window.pollEvent();
-
-        cam.move(window);
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        
-        RenderGame(window, objects, objectsTarget, cam);
-        RenderEditor(window, objects);
-            
-        ImGui::Render();
-        
-        if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
-        else window.clear(0.9, 0.9, 0.9, 1);
-
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-
-        // fontAtlas->bind();
-        // render(textQuad, 6, shader, [&](Shader* shader) {
-        //     shader->set_matrix("m_model", glm::mat4(1.0));
-        //     shader->set_matrix("m_view", glm::mat4(1.0));
-        //     shader->set_matrix("m_projection", cam.projection);
-            // shader->set<float, 4>("u_color", 1, 1, 1, 1);
-            // shader->set<int, 1>("u_texture", 0);
-        // }, GL_TRIANGLES);
-        // fontAtlas->unbind();
-
-
-        window.display();
-
-
-        // --- Frame limiting ---
-        float frameTime = glfwGetTime() - currentFrameTime;
-        if (frameTime < targetFrameTime) {
-            float sleepTime = targetFrameTime - frameTime;
-            std::this_thread::sleep_for(std::chrono::duration<float>(sleepTime));
-        }
+        YouWinAnimationAndNextLevel(objectsTarget);
+        RenderAll(window, objects, objectsTarget);
     }
 
 

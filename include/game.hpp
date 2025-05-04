@@ -89,6 +89,10 @@ struct GameObj {
     void draw() {
 
     }
+
+    bool operator==(const GameObj& other) const {
+        return color == other.color; // compare what matters
+    }
 };
 
 #endif//CAM_HPP
