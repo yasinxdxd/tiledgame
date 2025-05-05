@@ -247,7 +247,7 @@ void YouWinAnimationAndNextLevel(std::vector<GameObj>& objectTargets) {
             LoadLevel(objectTargets, ++level);
             youWinLevel = false;
         } else {
-            cam.yaw += 0.01;
+            cam.yaw += 0.0628;
         }
     }
 }
@@ -350,7 +350,7 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
     ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() - 50));
     ImGui::SetWindowPos(ImVec2(window.getWindowWidth() / 2, 50));
 
-    ImGui::BeginChild("RenderSection", ImVec2(window.getWindowWidth() / 2 - 128, 0), false);
+    ImGui::BeginChild("RenderSection", ImVec2(window.getWindowWidth() / 2 - 150, 0), false);
     {
         ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTexture.get_texture()));
         ImGui::Text("Display");
@@ -411,8 +411,8 @@ void ShowColorSquaresWindow(yt2d::Window& window)
             {"BLUE", IntToImVec4LittleEndian(0x264b96ff)},
             {"YELLOW", IntToImVec4LittleEndian(0xf9a73eff)},
             {"PINK", IntToImVec4LittleEndian(0xF88379ff)},
-            {"EMPTY", IntToImVec4LittleEndian(0x00000000)},
-            {"WHITE", IntToImVec4LittleEndian(0xEEEEEEFF)},
+            {"EMPTY", darkMode ? IntToImVec4LittleEndian(0x18141400) : IntToImVec4LittleEndian(0xf8f8f800)},
+            {"WHITE", IntToImVec4LittleEndian(0xFFFFFFFF)},
             {"BROWN", IntToImVec4LittleEndian(0x964B00FF)},
         };
 
