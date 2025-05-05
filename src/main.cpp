@@ -41,6 +41,8 @@ std::string code_buffer_str;
 
 std::string _log;
 
+Shader* confettiShader;
+
 Shader* shader;
 Camera cam;
 Texture2D* texture;
@@ -48,6 +50,9 @@ RenderTexture2D renderTexture;
 
 Texture2D* textureTarget;
 RenderTexture2D renderTextureTarget;
+
+Texture2D* texturePostProcess;
+RenderTexture2D renderTexturePostProcess;
 
 const float targetFrameTime = 1.0f / 60.0f;
 float lastFrameTime = 0.0f;
@@ -246,6 +251,8 @@ void YouWinAnimationAndNextLevel(std::vector<GameObj>& objectTargets) {
     }
 }
 
+void ShowColorSquaresWindow(yt2d::Window& window);
+
 void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectTargets) {
     ImGui::Begin("code", nullptr,
         ImGuiWindowFlags_NoTitleBar |
@@ -330,6 +337,49 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
     ImGui::EndChild();
 
     ImGui::End();
+
+    ImGui::Begin("game", nullptr,
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoScrollWithMouse
+    );
+    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() - 50));
+    ImGui::SetWindowPos(ImVec2(window.getWindowWidth() / 2, 50));
+
+    ImGui::BeginChild("RenderSection", ImVec2(window.getWindowWidth() / 2 - 128, 0), false);
+    {
+        ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTexture.get_texture()));
+        ImGui::Text("Display");
+        ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
+        ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0)); // Flip UVs for correct orientation
+    }
+    {
+        ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTextureTarget.get_texture()));
+        ImGui::Text("Target");
+        ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
+        ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0));
+    }
+    ImGui::PushFont(fontSml);
+        ImGui::Text("dark-mode");
+        ImGui::SameLine();
+        ToggleButton("dark-mode", &darkMode);
+        if (darkMode) {
+            editor.SetPalette(editor.GetDarkPalette());
+            ImGui::StyleColorsDark();
+        } else {
+            editor.SetPalette(editor.GetLightPalette());
+            ImGui::StyleColorsLight();
+        }
+    ImGui::PopFont();
+    ImGui::EndChild();
+    
+    ImGui::SameLine();
+    ShowColorSquaresWindow(window);
+
+    ImGui::End();
 }
 
 std::tuple<float, float, float, float> colorFromUInt(uint32_t color) {
@@ -345,7 +395,7 @@ ImVec4 IntToImVec4LittleEndian(unsigned int color) {
     return ImVec4(a, b, g, r);
 }
 
-void ShowColorSquaresWindow(yt2d::Window& window) // assuming 'window' is passed in
+void ShowColorSquaresWindow(yt2d::Window& window)
 {
     ImGui::BeginChild("ColorSquares", ImVec2(128, 0), true, ImGuiWindowFlags_NoScrollbar);
     {
@@ -446,51 +496,7 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
             }
         }
     }
-    renderTextureTarget.unbind();
-
-
-    ImGui::Begin("game", nullptr,
-        ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoScrollbar |
-        ImGuiWindowFlags_NoScrollWithMouse
-    );
-    ImGui::SetWindowSize(ImVec2(window.getWindowWidth() / 2, window.getWindowHeight() - 50));
-    ImGui::SetWindowPos(ImVec2(window.getWindowWidth() / 2, 50));
-
-    ImGui::BeginChild("RenderSection", ImVec2(window.getWindowWidth() / 2 - 128, 0), false);
-    {
-        ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTexture.get_texture()));
-        ImGui::Text("Display");
-        ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
-        ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0)); // Flip UVs for correct orientation
-    }
-    {
-        ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTextureTarget.get_texture()));
-        ImGui::Text("Target");
-        ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
-        ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0));
-    }
-    ImGui::PushFont(fontSml);
-        ImGui::Text("dark-mode");
-        ImGui::SameLine();
-        ToggleButton("dark-mode", &darkMode);
-        if (darkMode) {
-            editor.SetPalette(editor.GetDarkPalette());
-            ImGui::StyleColorsDark();
-        } else {
-            editor.SetPalette(editor.GetLightPalette());
-            ImGui::StyleColorsLight();
-        }
-    ImGui::PopFont();
-    ImGui::EndChild();
-    
-    ImGui::SameLine();
-    ShowColorSquaresWindow(window);
-
-    ImGui::End();
+    renderTextureTarget.unbind();   
 }
 
 void InitImgui(yt2d::Window& window) {
@@ -527,51 +533,29 @@ void DestroyImgui() {
     ImGui::DestroyContext();
 }
 
-void RenderAll(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget) {
-    float currentFrameTime = glfwGetTime();
-    deltaTime = currentFrameTime - lastFrameTime;
-    lastFrameTime = currentFrameTime;
+void RenderAll(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget, Quad& quad) {
 
-    window.pollEvent();
+    RenderGame(window, objects, objectsTarget, cam);
 
-    cam.move(window);
+    renderTexturePostProcess.bind();
+    glViewport(0, 0, renderTexturePostProcess.get_texture()->getWidth(), renderTexturePostProcess.get_texture()->getHeight());
+    if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
+    else window.clear(0.9, 0.9, 0.9, 1);
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    
-    RenderGame(window, objects, objectsTarget, cam);
     RenderEditor(window, objects, objectsTarget);
-        
-    ImGui::Render();
-    
-    if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
-    else window.clear(0.9, 0.9, 0.9, 1);
+    // ImGui::ShowDemoWindow();
 
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-
-    // fontAtlas->bind();
-    // render(textQuad, 6, shader, [&](Shader* shader) {
-    //     shader->set_matrix("m_model", glm::mat4(1.0));
-    //     shader->set_matrix("m_view", glm::mat4(1.0));
-    //     shader->set_matrix("m_projection", cam.projection);
-        // shader->set<float, 4>("u_color", 1, 1, 1, 1);
-        // shader->set<int, 1>("u_texture", 0);
-    // }, GL_TRIANGLES);
-    // fontAtlas->unbind();
-
-
-    window.display();
-
-
-    // --- Frame limiting ---
-    float frameTime = glfwGetTime() - currentFrameTime;
-    if (frameTime < targetFrameTime) {
-        float sleepTime = targetFrameTime - frameTime;
-        std::this_thread::sleep_for(std::chrono::duration<float>(sleepTime));
-    }
+    renderTexturePostProcess.unbind();
 }
 
 int main(int argc, char* argv[])
@@ -597,7 +581,18 @@ int main(int argc, char* argv[])
     textureTarget = new Texture2D(640, 480, nullptr);
     textureTarget->generate_texture();
     renderTextureTarget.set_texture(textureTarget);
-    
+
+
+
+    texturePostProcess = new Texture2D(1920, 1080, nullptr);
+    texturePostProcess->generate_texture();
+    renderTexturePostProcess.set_texture(texturePostProcess);
+
+    confettiShader = new Shader();
+    confettiShader->load_shader_code("shaders/confetti.frag", Shader::ShaderCodeType::FRAGMENT_SHADER);
+    glcompiler::compile_and_attach_shaders(confettiShader);
+
+    Quad quad;
 
     // init_free_type();
 
@@ -618,15 +613,46 @@ int main(int argc, char* argv[])
     LoadLevel(objectsTarget, level);
 
     while (!window.isClose()) {
+        float currentFrameTime = glfwGetTime();
+        deltaTime = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
+    
+        window.pollEvent();
+        cam.move(window);
+        
         YouWinAnimationAndNextLevel(objectsTarget);
-        RenderAll(window, objects, objectsTarget);
+        RenderAll(window, objects, objectsTarget, quad);
+
+
+        if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
+        else window.clear(0.9, 0.9, 0.9, 1);
+            unsigned int quadTexture = ((unsigned int)(*renderTexturePostProcess.get_texture()));
+            texturePostProcess->bind();
+            render(quad, 6, confettiShader, [&](Shader* shader) {
+                shader->set<int, 1>("u_texture", 0);
+                shader->set<int, 1>("u_confetti", youWinLevel);
+                shader->set<float, 1>("iTime", glfwGetTime());
+            }, GL_TRIANGLES);
+            texturePostProcess->unbind();
+        window.display();
+
+
+
+        // frame limiting
+        float frameTime = glfwGetTime() - currentFrameTime;
+        if (frameTime < targetFrameTime) {
+            float sleepTime = targetFrameTime - frameTime;
+            std::this_thread::sleep_for(std::chrono::duration<float>(sleepTime));
+        }
     }
 
 
     // destroy_free_type();
     delete shader;
+    delete confettiShader;
     delete texture;
     delete textureTarget;
+    delete texturePostProcess;
     DestroyImgui();
 
     return 0;
