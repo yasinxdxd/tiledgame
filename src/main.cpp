@@ -59,7 +59,7 @@ float lastFrameTime = 0.0f;
 float deltaTime = 0.0f;
 float progresses[11*11*11] = {0.f};
 
-int level = 1;
+int level = 0;
 bool youWinLevel = false;
 float winTime = 0.0f;
 
