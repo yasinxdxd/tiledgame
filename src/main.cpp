@@ -19,6 +19,7 @@
 #include <glad/glad.h>
 #include <sstream>
 #include <TextEditor.h>
+#include <ImGuizmo.h>
 #include <game.hpp>
 #include <font.hpp>
 #include <glfw/glfw3.h>
@@ -431,11 +432,49 @@ void ShowColorSquaresWindow(yt2d::Window& window)
     ImGui::EndChild();
 }
 
+glm::mat4 tmpMat(1.0);
+glm::vec3 tmpPos = glm::vec3(0.0, 0.0, 0.0);
+glm::mat4 objectMatrix = glm::translate(tmpMat, tmpPos);
+void ShowImGuizmoUI(yt2d::Window& window) {
+    // ImGuiIO& io = ImGui::GetIO();
+    // io.DisplaySize = ImVec2(
+    //     (float)renderTexture.get_texture()->getWidth(),
+    //     (float)renderTexture.get_texture()->getHeight()
+    // );
+
+    // ImGui_ImplOpenGL3_NewFrame();
+    // ImGui_ImplGlfw_NewFrame();
+    // ImGui::NewFrame();
+
+    ImGuizmo::BeginFrame();
+    ImGui::Begin("game");
+    ImGui::BeginChild("RenderSection");
+    ImGuizmo::SetDrawlist();
+    ImGuizmo::Enable(false);
+    ImGuizmo::AllowAxisFlip(false);
+    ImGuizmo::SetAxisMask(false, false, false);
+    // ImGuizmo::SetRect(0, 0 , window.getWindowWidth() , window.getWindowHeight());
+    ImVec2 size = ImVec2(window.getWindowWidth() / 4, window.getWindowHeight() / 4);
+    ImVec2 offset = ImVec2(window.getWindowWidth() / 24, window.getWindowHeight() / 20);
+    ImGuizmo::SetRect(window.getWindowWidth() / 2 - size.x / 2 + offset.x, window.getWindowHeight() / 2 - size.y / 2 - offset.y, size.x, size.y);
+
+    static ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE;
+    static ImGuizmo::MODE mode = ImGuizmo::WORLD;
+
+    ImGuizmo::Manipulate(glm::value_ptr(cam.view), glm::value_ptr(cam.projection), operation, mode, glm::value_ptr(objectMatrix));
+    ImGui::EndChild();
+    ImGui::End();
+
+    // ImGui::Render();
+    // ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
 void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget, Camera& cam) {
 
     // game
     renderTexture.bind();
     glViewport(0, 0, renderTexture.get_texture()->getWidth(), renderTexture.get_texture()->getHeight());
+    glEnable(GL_DEPTH_TEST);
     if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
     else window.clear(0.9, 0.9, 0.9, 1);
 
@@ -545,9 +584,8 @@ void RenderAll(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-
     RenderEditor(window, objects, objectsTarget);
-    // ImGui::ShowDemoWindow();
+    ShowImGuizmoUI(window);
 
 
     glEnable(GL_BLEND);
