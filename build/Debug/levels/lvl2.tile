@@ -1,16 +1,6 @@
 import "../tiled.tile";
 
-func main(argc: int): int {
-	if (y == -5) {return BROWN;}
-	if (y == -4) {return GREEN;}
-	if (abs(x) < 4
-	&& (abs(y) == 3
-	|| (abs(x) + 1) % 2 == 1 && y < 3 && (abs(z) % 2 == 1))
-	) {return WHITE;}
-	if (y == 5 && abs(x) < 2) {return WHITE;}
-	if (abs(x) == 2 && y == 5) {return EMPTY;}
-	if (abs(x) < 3 && y > 2) {return WHITE;}
-	return EMPTY;
+func main(argc: int): int {	
+	if (abs(x) > 3) {return WHITE;}
+	return RED;
 }
-
-
