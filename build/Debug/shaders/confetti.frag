@@ -1,3 +1,7 @@
+// Copyright (C) 2015 Matthew Ready
+// Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Australia license.
+// http://creativecommons.org/licenses/by-nc-sa/3.0/au
+
 #version 330 core
 
 out vec4 result_frag_color;
