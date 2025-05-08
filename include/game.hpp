@@ -60,8 +60,8 @@ struct Camera
         camOffset.y = distance * sinf(pitch);
         camOffset.z = distance * cosf(pitch) * cosf(yaw);
 
-        glm::vec3 camPos = position + camOffset;
-        view = glm::lookAt(camPos, position, glm::vec3(0.0f, 1.0f, 0.0f));
+        position = camOffset;
+        view = glm::lookAt(position, glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
     }
 };
 

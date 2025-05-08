@@ -31,6 +31,10 @@ extern "C" {
     #include <tvm/tvm.h>
 }
 
+ImVec2 mouseInImageDisplay;
+ImVec2 imageSizeDisplay;
+ImVec2 mouseInImageTarget;
+ImVec2 imageSizeTarget;
 
 bool darkMode = false;
 
@@ -219,9 +223,9 @@ void RenderAnsiColoredText(const std::string& ansiText) {
 
 void LoadLevel(std::vector<GameObj>& objectTargets, int level) {
     std::string lvlName = std::string("levels/lvl") + std::to_string(level) + std::string(".bin");
-    for (size_t y = 0; y < 11; y++) {
-        for (size_t x = 0; x < 11; x++) {
-            for (size_t z = 0; z < 11; z++) {
+    for (size_t z = 0; z < 11; z++) {
+        for (size_t y = 0; y < 11; y++) {
+            for (size_t x = 0; x < 11; x++) {
                 tvm_t* vm = tvm_init();
                 tvm_load_program_from_file(vm, lvlName.c_str());
                 vm->gframe->global_vars[0].i32 = (x - 5);
@@ -230,11 +234,11 @@ void LoadLevel(std::vector<GameObj>& objectTargets, int level) {
 
                 tvm_run(vm);
                 
-                auto& obj = objectTargets[y * 121 + x * 11 + z];
+                auto& obj = objectTargets[z * 121 + y * 11 + x];
                 obj.color = vm->stack[vm->sp - 1].ui32;
                 tvm_destroy(vm);
 
-                rnds[y * 121 + x * 11 + z] = (rand() % 50) / 100.f + 0.7f;
+                rnds[z * 121 + y * 11 + x] = (rand() % 50) / 100.f + 0.7f;
             }
         }
     }
@@ -288,9 +292,9 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
         // check compiler err
         if (_log.find("ERROR") == std::string::npos) {
              
-            for (size_t y = 0; y < 11; y++) {
-                for (size_t x = 0; x < 11; x++) {
-                    for (size_t z = 0; z < 11; z++) {
+            for (size_t z = 0; z < 11; z++) {
+                for (size_t y = 0; y < 11; y++) {
+                    for (size_t x = 0; x < 11; x++) {
                         tvm_t* vm = tvm_init();
                         tvm_load_program_from_file(vm, "tiledgame.bin");
                         vm->gframe->global_vars[0].i32 = (x - 5);
@@ -299,11 +303,11 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
 
                         tvm_run(vm);
                         
-                        auto& obj = objects[y * 121 + x * 11 + z];
+                        auto& obj = objects[z * 121 + y * 11 + x];
                         obj.color = vm->stack[vm->sp - 1].ui32;
                         tvm_destroy(vm);
 
-                        rnds[y * 121 + x * 11 + z] = (rand() % 50) / 100.f + 0.7f;
+                        rnds[z * 121 + y * 11 + x] = (rand() % 50) / 100.f + 0.7f;
                     }
                 }
             }
@@ -356,6 +360,12 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
         ImGui::Text("Display");
         ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
         ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0)); // Flip UVs for correct orientation
+
+        // get correct mouse coords:
+        ImVec2 mouseScreen = ImGui::GetMousePos();
+        ImVec2 imagePos = ImGui::GetItemRectMin(); // Position of top-left corner of ImGui::Image
+        imageSizeDisplay = ImGui::GetItemRectSize(); // Size of the image
+        mouseInImageDisplay = ImVec2(mouseScreen.x - imagePos.x, mouseScreen.y - imagePos.y);
     }
     {
         ImTextureID textureID = (ImTextureID)(intptr_t)((unsigned int)(*renderTextureTarget.get_texture()));
@@ -469,8 +479,88 @@ void ShowImGuizmoUI(yt2d::Window& window) {
     // ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
+struct Ray {
+    glm::vec3 origin;
+    glm::vec3 direction;
+};
+
+Ray GetMouseRay3D(const ImVec2& mousePos, glm::vec2 size) {
+    float x = (2.0f * mousePos.x) / size.x  - 1.0;
+    float y = 1.f - (2.0f * mousePos.y) / size.y; // flip Y for NDC
+    glm::vec4 rayClip = glm::vec4(x, y, -1.0f, 1.0f);
+
+    glm::vec4 rayEye = glm::inverse(cam.projection) * rayClip;
+    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+
+    glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(cam.view) * rayEye));
+    return Ray{ cam.position, rayWorld };;
+}
+
+bool RayIntersectsAABB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& aabbMin, const glm::vec3& aabbMax, float& t) {
+    float tmin = (aabbMin.x - rayOrigin.x) / rayDir.x;
+    float tmax = (aabbMax.x - rayOrigin.x) / rayDir.x;
+
+    if (tmin > tmax) std::swap(tmin, tmax);
+
+    float tymin = (aabbMin.y - rayOrigin.y) / rayDir.y;
+    float tymax = (aabbMax.y - rayOrigin.y) / rayDir.y;
+
+    if (tymin > tymax) std::swap(tymin, tymax);
+
+    if ((tmin > tymax) || (tymin > tmax))
+        return false;
+
+    if (tymin > tmin)
+        tmin = tymin;
+    if (tymax < tmax)
+        tmax = tymax;
+
+    float tzmin = (aabbMin.z - rayOrigin.z) / rayDir.z;
+    float tzmax = (aabbMax.z - rayOrigin.z) / rayDir.z;
+
+    if (tzmin > tzmax) std::swap(tzmin, tzmax);
+
+    if ((tmin > tzmax) || (tzmin > tmax))
+        return false;
+
+    t = std::max(tmin, tzmin);
+    return true;
+}
+
+const GameObj* CheckMousePicking(yt2d::Window& window, const std::vector<GameObj>& objects) {
+    Ray ray = GetMouseRay3D(mouseInImageDisplay, glm::vec2(imageSizeDisplay.x, imageSizeDisplay.y));
+    // std::cout << "mouse: " << mouseInImageDisplay.x << ", " << mouseInImageDisplay.y << std::endl;
+    // std::cout << "raydir: " << ray.direction.x << ", " << ray.direction.y << ", " << ray.direction.z << std::endl;
+    // std::cout << "rayori: " << ray.origin.x << ", " << ray.origin.y << ", " << ray.origin.z << std::endl;
+
+    float closestT = std::numeric_limits<float>::max();
+    const GameObj* selected = nullptr;
+
+    for (const auto& obj : objects) {
+        if (obj.color != 0) {
+            glm::vec3 halfSize = glm::vec3(2.f) * 0.5f;
+            glm::vec3 min = obj.pos - halfSize;
+            glm::vec3 max = obj.pos + halfSize;
+
+            float t;
+            if (RayIntersectsAABB(ray.origin, ray.direction, min, max, t)) {
+                if (t < closestT) {
+                    closestT = t;
+                    selected = &obj;
+                }
+            }
+        }
+    }
+
+    if (selected) {
+        return selected;
+    }
+    return nullptr;
+}
+
 void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget, Camera& cam) {
 
+    const GameObj* selected = CheckMousePicking(window, objects);
     // game
     renderTexture.bind();
     glViewport(0, 0, renderTexture.get_texture()->getWidth(), renderTexture.get_texture()->getHeight());
@@ -478,19 +568,19 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
     if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
     else window.clear(0.9, 0.9, 0.9, 1);
 
-    for (size_t y = 0; y < 11; y++) {
-        for (size_t x = 0; x < 11; x++) {
-            for (size_t z = 0; z < 11; z++) {
-                auto& obj = objects[y * 121 + x * 11 + z];
+    for (size_t z = 0; z < 11; z++) {
+        for (size_t y = 0; y < 11; y++) {
+            for (size_t x = 0; x < 11; x++) {
+                auto& obj = objects[z * 121 + y * 11 + x];
                 auto [r, g, b, a] = colorFromUInt(obj.color);
                 obj.setPos(glm::vec3(float(x - 5.0) * 2.f, float(y - 5.0) * 2.f, float(z - 5.0) * 2.f));
 
                 if (obj.color != 0) {
                     render(obj.cube, 36, shader, [&](Shader* shader) {
-                        float& progress = progresses[y * 121 + x * 11 + z];
+                        float& progress = progresses[z * 121 + y * 11 + x];
                         if (progress < 1.0f) {
                             obj.model = glm::scale(obj.model, glm::vec3(progress));
-                            progress += (deltaTime + rnds[y * 121 + x * 11 + z]) * 0.1; // or some time-based increment
+                            progress += (deltaTime + rnds[z * 121 + y * 11 + x]) * 0.1; // or some time-based increment
                             // std::cout << progress << std::endl;
                         } else {
                             progress = 1.f;
@@ -501,6 +591,10 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
                         shader->set_matrix("m_view", cam.view);
                         shader->set_matrix("m_projection", cam.projection);
                         shader->set<float, 4>("u_color", r, g, b, a);
+                        if (selected == &obj) {
+                            const float brighter = 1.5;
+                            shader->set<float, 4>("u_color", r * brighter, g * brighter, b * brighter, a * brighter);
+                        }
 
                     }, GL_TRIANGLES);
                 }
@@ -516,10 +610,10 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
     if (darkMode) window.clear(0.1, 0.15, 0.2, 1);
     else window.clear(0.9, 0.9, 0.9, 1);
 
-    for (size_t y = 0; y < 11; y++) {
+    for (size_t z = 0; z < 11; z++) {
+        for (size_t y = 0; y < 11; y++) {
         for (size_t x = 0; x < 11; x++) {
-            for (size_t z = 0; z < 11; z++) {
-                auto& obj = objectsTarget[y * 121 + x * 11 + z];
+                auto& obj = objectsTarget[z * 121 + y * 11 + x];
                 auto [r, g, b, a] = colorFromUInt(obj.color);
                 obj.setPos(glm::vec3(float(x - 5.0) * 2.f, float(y - 5.0) * 2.f, float(z - 5.0) * 2.f));
 
