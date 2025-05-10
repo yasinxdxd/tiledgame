@@ -41,6 +41,18 @@ struct Camera
                 pitch = glm::clamp(pitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
             }
         }
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            if (ImGui::GetMousePos().x > window.getWindowWidth() / 2) {
+                ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+                ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
+    
+                float sensitivity = 0.005f;
+                yaw   += delta.x * sensitivity;
+                pitch += delta.y * sensitivity;
+                // Clamp pitch to avoid flipping
+                pitch = glm::clamp(pitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
+            }
+        }
 
         if (ImGui::GetMousePos().x > window.getWindowWidth() / 2) {
             if (g_scroll_delta != 0.0f) {

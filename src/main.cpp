@@ -36,6 +36,10 @@ ImVec2 imageSizeDisplay;
 ImVec2 mouseInImageTarget;
 ImVec2 imageSizeTarget;
 
+glm::vec3 selectedPos;
+GameObj* selected = nullptr;
+GameObj* selectedTarget = nullptr;
+
 bool darkMode = false;
 
 ImFont* fontBig;
@@ -372,6 +376,11 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
         ImGui::Text("Target");
         ImVec2 size = ImVec2(window.getWindowWidth() / 2 - 120, window.getWindowHeight() / 2 - 100);
         ImGui::Image(textureID, size, ImVec2(0, 1), ImVec2(1, 0));
+        // get correct mouse coords:
+        ImVec2 mouseScreen = ImGui::GetMousePos();
+        ImVec2 imagePos = ImGui::GetItemRectMin(); // Position of top-left corner of ImGui::Image
+        imageSizeTarget = ImGui::GetItemRectSize(); // Size of the image
+        mouseInImageTarget = ImVec2(mouseScreen.x - imagePos.x, mouseScreen.y - imagePos.y);
     }
     ImGui::PushFont(fontSml);
         ImGui::Text("dark-mode");
@@ -391,6 +400,24 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
     ShowColorSquaresWindow(window);
 
     ImGui::End();
+
+    if (selected || selectedTarget) {
+        ImGui::SetNextWindowBgAlpha(0.4);
+        ImGui::PushFont(fontSml);
+        ImGui::Begin("selectedPositions", nullptr,
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoScrollbar |
+            ImGuiWindowFlags_NoScrollWithMouse
+        );
+        ImGui::SetWindowPos(ImGui::GetMousePos());
+        ImGui::SetWindowSize(ImVec2(180, 24));
+        ImGui::Text("x: %0.f, y: %0.f, z: %0.f", selectedPos.x, selectedPos.y, selectedPos.z);
+        ImGui::PopFont();
+        ImGui::End();
+    }
 }
 
 std::tuple<float, float, float, float> colorFromUInt(uint32_t color) {
@@ -527,16 +554,14 @@ bool RayIntersectsAABB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, cons
     return true;
 }
 
-const GameObj* CheckMousePicking(yt2d::Window& window, const std::vector<GameObj>& objects) {
+void CheckMousePicking(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget, GameObj** selected, GameObj** selectedTarget, glm::vec3& pos) {
     Ray ray = GetMouseRay3D(mouseInImageDisplay, glm::vec2(imageSizeDisplay.x, imageSizeDisplay.y));
-    // std::cout << "mouse: " << mouseInImageDisplay.x << ", " << mouseInImageDisplay.y << std::endl;
-    // std::cout << "raydir: " << ray.direction.x << ", " << ray.direction.y << ", " << ray.direction.z << std::endl;
-    // std::cout << "rayori: " << ray.origin.x << ", " << ray.origin.y << ", " << ray.origin.z << std::endl;
+    Ray rayTarget = GetMouseRay3D(mouseInImageTarget, glm::vec2(imageSizeTarget.x, imageSizeTarget.y));
+    
 
     float closestT = std::numeric_limits<float>::max();
-    const GameObj* selected = nullptr;
 
-    for (const auto& obj : objects) {
+    for (auto& obj : objects) {
         if (obj.color != 0) {
             glm::vec3 halfSize = glm::vec3(2.f) * 0.5f;
             glm::vec3 min = obj.pos - halfSize;
@@ -546,21 +571,37 @@ const GameObj* CheckMousePicking(yt2d::Window& window, const std::vector<GameObj
             if (RayIntersectsAABB(ray.origin, ray.direction, min, max, t)) {
                 if (t < closestT) {
                     closestT = t;
-                    selected = &obj;
+                    *selected = &obj;
+                    pos = obj.pos / 2.f;
                 }
             }
         }
     }
 
-    if (selected) {
-        return selected;
+    for (auto& obj : objectsTarget) {
+        if (obj.color != 0) {
+            glm::vec3 halfSize = glm::vec3(2.f) * 0.5f;
+            glm::vec3 min = obj.pos - halfSize;
+            glm::vec3 max = obj.pos + halfSize;
+
+            float t;
+            if (RayIntersectsAABB(rayTarget.origin, rayTarget.direction, min, max, t)) {
+                if (t < closestT) {
+                    closestT = t;
+                    *selectedTarget = &obj;
+                    pos = obj.pos / 2.f;
+                }
+            }
+        }
     }
-    return nullptr;
+
 }
 
 void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector<GameObj>& objectsTarget, Camera& cam) {
 
-    const GameObj* selected = CheckMousePicking(window, objects);
+    selected = nullptr;
+    selectedTarget = nullptr;
+    CheckMousePicking(window, objects, objectsTarget, &selected, &selectedTarget, selectedPos);
     // game
     renderTexture.bind();
     glViewport(0, 0, renderTexture.get_texture()->getWidth(), renderTexture.get_texture()->getHeight());
@@ -624,6 +665,10 @@ void RenderGame(yt2d::Window& window, std::vector<GameObj>& objects, std::vector
                         shader->set_matrix("m_view", cam.view);
                         shader->set_matrix("m_projection", cam.projection);
                         shader->set<float, 4>("u_color", r, g, b, a);
+                        if (selectedTarget == &obj) {
+                            const float brighter = 1.5;
+                            shader->set<float, 4>("u_color", r * brighter, g * brighter, b * brighter, a * brighter);
+                        }
                     }, GL_TRIANGLES);
                 }
             }
