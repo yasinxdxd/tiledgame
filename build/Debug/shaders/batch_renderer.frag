@@ -7,17 +7,6 @@ in vec2 o_vertex_uv;
 
 uniform vec4 u_color;
 uniform float u_progress;
-/*
-void main()
-{	
-	// Simulate fake lighting using the UV's y coordinate (light from top)
-    float lighting = 0.8 + 0.5 * o_vertex_uv.y; // Range from 0.5 to 1.0
-    vec3 lit_color = u_color.rgb * lighting;
-	
-	
-    result_frag_color = vec4(lit_color, u_color.a * u_progress);
-}
-*/
 
 void main()
 {
@@ -43,6 +32,19 @@ void main()
     // Darken edges to mimic bevel (adjust factor for effect strength)
     color *= mix(0.7, 1.0, bevel); // Darken by 30% at edges, full color in center
 
+
+    // -- post processing
+    vec2 ofuv = clamp(uv, 0.1, 0.9);
+    if (uv.x < ofuv.x || uv.x > ofuv.x || uv.y < ofuv.y || uv.y > ofuv.y) {
+        color *= color * 0.7;
+    }
+    
+    float shade_step = floor(ofuv.y * ofuv.x * 5.0); // 5 bands
+    float shade = 0.6 + 0.2 * mod(shade_step, 5.0); // Vary from 0.2 to 1.0
+
+    vec3 final_color = color * shade;
+
+
     // Output final color
-    result_frag_color = vec4(color, alpha);
+    result_frag_color = vec4(final_color, alpha);
 }

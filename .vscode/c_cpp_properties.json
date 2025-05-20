@@ -1,0 +1,34 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${default}",
+                "${workspaceFolder}/extern/imgui/include",
+                "${workspaceFolder}/extern/raylib/include",
+                "${workspaceFolder}/core/include",
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/extern/glm/include",
+                "${workspaceFolder}/extern/texteditor",
+                "${workspaceFolder}/extern/tile",
+                "${workspaceFolder}/extern/stb/include",
+                "${workspaceFolder}/extern/tile/libffi-msvc/include",
+                "${workspaceFolder}/extern/tinygltfloader/include",
+                "${workspaceFolder}/extern/OBJ_Loader/include",
+                "${workspaceFolder}/extern/glad/include",
+                "${workspaceFolder}/extern/glfw/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.20348.0",
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64"
+        }
+    ],
+    "version": 4
+}

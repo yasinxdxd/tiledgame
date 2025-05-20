@@ -186,15 +186,6 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //Value Computed by CMake
-TiledGameTVM_BINARY_DIR:STATIC=C:/Users/Lenovo/Desktop/game/tiled/build/extern/tile
-
-//Value Computed by CMake
-TiledGameTVM_IS_TOP_LEVEL:STATIC=OFF
-
-//Value Computed by CMake
-TiledGameTVM_SOURCE_DIR:STATIC=C:/Users/Lenovo/Desktop/game/tiled/extern/tile
-
-//Value Computed by CMake
 TiledGame_BINARY_DIR:STATIC=C:/Users/Lenovo/Desktop/game/tiled/build
 
 //Value Computed by CMake
@@ -202,18 +193,6 @@ TiledGame_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 TiledGame_SOURCE_DIR:STATIC=C:/Users/Lenovo/Desktop/game/tiled
-
-//Value Computed by CMake
-core_BINARY_DIR:STATIC=C:/Users/Lenovo/Desktop/game/tiled/build/core
-
-//Value Computed by CMake
-core_IS_TOP_LEVEL:STATIC=OFF
-
-//Dependencies for the target
-core_LIB_DEPENDS:STATIC=general;glfw3.lib;general;freetype.lib;
-
-//Value Computed by CMake
-core_SOURCE_DIR:STATIC=C:/Users/Lenovo/Desktop/game/tiled/core
 
 
 ########################
