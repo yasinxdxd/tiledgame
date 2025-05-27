@@ -24,7 +24,7 @@ void glcompiler::destroy()
     if (is_initialized())
         glDeleteShader(_SHADER_DEFAULT_GL_VERTEX_SHADER);
 }
-_NORETURN_ void glcompiler::compile_and_attach_shaders(Shader *shader)
+void glcompiler::compile_and_attach_shaders(Shader *shader)
 {
     glshader_t fragment_shader;
     glshader_t vertex_shader;
@@ -150,7 +150,7 @@ _NORETURN_ void glcompiler::compile_and_attach_shaders(Shader *shader)
     }
 }
 
-_NORETURN_ void glcompiler::_priv::compile_default_vetex_shader()
+void glcompiler::_priv::compile_default_vetex_shader()
 {
     //glshader_t default_vertex_shader;
     int success;
@@ -178,7 +178,7 @@ _NORETURN_ void glcompiler::_priv::compile_default_vetex_shader()
     }
 }
 
-_NORETURN_ void glcompiler::save_shader_binary()
+void glcompiler::save_shader_binary()
 {
     //TODO: fill it.
 }

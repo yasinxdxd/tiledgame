@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\TiledGameTVM_d.dir/objects.a
+C:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\TiledGameTVM_d.dir/objects.a @CMakeFiles\TiledGameTVM_d.dir\objects1.rsp
+C:\msys64\ucrt64\bin\cc.exe  -static-libgcc -static-libstdc++ -g -g -shared -o Debug\libTiledGameTVM_d.dll -Wl,--out-implib,Debug\libTiledGameTVM_d.dll.a -Wl,--major-image-version,0,--minor-image-version,0 -Wl,--whole-archive CMakeFiles\TiledGameTVM_d.dir/objects.a -Wl,--no-whole-archive @CMakeFiles\TiledGameTVM_d.dir\linkLibs.rsp

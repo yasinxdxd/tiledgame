@@ -15,13 +15,13 @@ BatchRenderer::~BatchRenderer()
     destroy();
 }
 
-_NORETURN_ void BatchRenderer::init()
+void BatchRenderer::init()
 {
     init_buffers();
     init_shader();
 }
 
-_NORETURN_ void BatchRenderer::begin()
+void BatchRenderer::begin()
 {
     m_vertices_index = 0;
     m_indices_index = 0;
@@ -36,7 +36,7 @@ void BatchRenderer::set_shader(shader_function_capture func)
     //shader things...
 }
 
-_NORETURN_ void BatchRenderer::vertex(float px, float py, float pz, float u, float v, float r, float g, float b)
+void BatchRenderer::vertex(float px, float py, float pz, float u, float v, float r, float g, float b)
 {
     assert(m_vertices_index < MAX_VERT_COUNT);
 
@@ -50,7 +50,7 @@ _NORETURN_ void BatchRenderer::vertex(float px, float py, float pz, float u, flo
     m_vertices[m_vertices_index++] = b;
 }
 
-_NORETURN_ void BatchRenderer::end()
+void BatchRenderer::end()
 {
     const u32 div = m_vertices_index / 32;
     for (size_t i = 0; i < div; i++)
@@ -74,7 +74,7 @@ _NORETURN_ void BatchRenderer::end()
     glBindVertexArray(0);
 }
 
-_NORETURN_ void BatchRenderer::render(unsigned int primary)
+void BatchRenderer::render(unsigned int primary)
 {
     GLenum error;
     while ((error = glGetError()) != GL_NO_ERROR) {
@@ -91,7 +91,7 @@ _NORETURN_ void BatchRenderer::render(unsigned int primary)
     }
 }
 
-_NORETURN_ void BatchRenderer::destroy()
+void BatchRenderer::destroy()
 {
     glDeleteBuffers(1, &m_gl_EBO);
     glDeleteBuffers(1, &m_gl_VBO);
@@ -102,7 +102,7 @@ _NORETURN_ void BatchRenderer::destroy()
     }
 }
 
-_NORETURN_ void BatchRenderer::init_buffers()
+void BatchRenderer::init_buffers()
 {
     GLenum error;
     while ((error = glGetError()) != GL_NO_ERROR) {
@@ -161,7 +161,7 @@ _NORETURN_ void BatchRenderer::init_buffers()
 
 #define ROOT_DIR "../../../pyopengui_lib"
 
-_NORETURN_ void BatchRenderer::init_shader()
+void BatchRenderer::init_shader()
 {
     if (glcompiler::is_initialized())
         glcompiler::compile_and_attach_shaders(m_batch_shader);

@@ -3,7 +3,6 @@ project(TiledGame)
 
 
 set(EXTERN_DIR ${PROJECT_SOURCE_DIR}/extern)
-set(CORE_LIB_DIR ${PROJECT_SOURCE_DIR}/build/core/Debug)
 
 # C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -35,21 +34,33 @@ include_directories(
     ${EXTERN_DIR}/tile/libffi-mingw64/include
 )
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(LIBTILEDGAMETVMDIR ${EXTERN_DIR}/tile/build/Release)
+else()
+    set(LIBTILEDGAMETVMDIR ${EXTERN_DIR}/tile/build/Debug)
+endif()
+
 # Library directory
 link_directories(
     ${EXTERN_DIR}/glfw/lib
     ${EXTERN_DIR}/FreeType/lib
-    ${EXTERN_DIR}/tile/build/
+    ${LIBTILEDGAMETVMDIR}
 )
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SRC_FILES})
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(LIBTILEDGAMETVM "libTiledGameTVM.lib")
+else()
+    set(LIBTILEDGAMETVM "libTiledGameTVM_d.lib")
+endif()
 
 # Link with raylib (precompiled)
 target_link_libraries(
     ${PROJECT_NAME} 
     glfw3.lib
     freetype.lib
-    libTiledGameTVM.lib
+    ${LIBTILEDGAMETVM}
 )
 

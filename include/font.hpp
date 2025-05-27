@@ -37,8 +37,8 @@ struct AtlasInfo
 };
 
 
-_NORETURN_ void init_free_type();
-_NORETURN_ void destroy_free_type();
+void init_free_type();
+void destroy_free_type();
 
 
 class Font
@@ -47,7 +47,7 @@ public:
     Font();
     ~Font();
 
-    _NORETURN_ void load_font(const char* file_name);
+    void load_font(const char* file_name);
     Texture2D* create_font_atlas();
     AtlasInfo m_atlas_info;
 

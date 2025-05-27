@@ -5,10 +5,10 @@ file(REMOVE_RECURSE
   "CMakeFiles/TiledGameTVM.dir/tci.c.obj.d"
   "CMakeFiles/TiledGameTVM.dir/tvm.c.obj"
   "CMakeFiles/TiledGameTVM.dir/tvm.c.obj.d"
-  "libTiledGameTVM.dll"
-  "libTiledGameTVM.dll.a"
-  "libTiledGameTVM.dll.manifest"
-  "libTiledGameTVM.pdb"
+  "Release/libTiledGameTVM.dll"
+  "Release/libTiledGameTVM.dll.a"
+  "Release/libTiledGameTVM.dll.manifest"
+  "Release/libTiledGameTVM.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

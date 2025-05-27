@@ -6,5 +6,5 @@ C_DEFINES = -DTiledGameTVM_EXPORTS
 
 C_INCLUDES = @CMakeFiles/TiledGameTVM.dir/includes_C.rsp
 
-C_FLAGS =  -static-libgcc -static-libstdc++ -std=gnu11
+C_FLAGS =  -static-libgcc -static-libstdc++ -O3 -O3 -DNDEBUG -std=gnu11
 

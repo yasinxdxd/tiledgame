@@ -1,0 +1,8 @@
+import "../tiled.tile";
+
+func main(argc: int): int {	
+	if (x == 0 && z == 0) {return PINK;}
+	if (x == 0 && y == 0) {return PINK;}
+	if (z == 0 && y == 0) {return PINK;}
+	return EMPTY;
+}

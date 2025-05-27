@@ -1,0 +1,23 @@
+import "../tiled.tile";
+
+func main(argc: int): int {
+	d: int = x*x + y*y + z*z;
+	if (x == 0 && z == 0) {return WHITE;}
+	if (d > 25) {
+		if ((abs(x) <= 1 && abs(z) <= 1)
+		|| (abs(x) <= 1 && abs(y) <= 1)
+		|| (abs(y) <= 1 && abs(z) <= 1)) {
+			
+			return GREEN;
+		}
+		if (abs(z) > 2) {return EMPTY;}
+		return YELLOW;
+	} else if (x == 0 && y == 0
+			|| x == 0 && z == 0
+			|| y == 0 && z == 0) {
+		return YELLOW;
+	}
+	return EMPTY;
+	
+	
+}

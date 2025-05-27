@@ -1,0 +1,23 @@
+import "tiled.tile";
+
+func main(argc: int): int {
+	return BROWN * (x*y*z + 0.789);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -9,7 +9,7 @@ namespace glcompiler
 {
     namespace _priv
     {
-        _NORETURN_ void compile_default_vetex_shader();
+        void compile_default_vetex_shader();
         struct _compiler_info
         {
             char compile_log_info[512];
@@ -21,9 +21,9 @@ namespace glcompiler
     bool is_initialized();
     void destroy();
     
-    _NORETURN_ void compile_and_attach_shaders(Shader* shader);
+    void compile_and_attach_shaders(Shader* shader);
     //FIXME: it will save shader binary into a file.
-    _NORETURN_ void save_shader_binary();
+    void save_shader_binary();
 
 
 }
