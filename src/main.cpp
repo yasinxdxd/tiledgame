@@ -1,5 +1,7 @@
+#ifdef WIN32
 #include <windows.h>
-#define YT2D_NO_STDINT
+#endif
+// #define YT2D_NO_STDINT
 #include <Vector.hh>
 #include <Window.hpp>
 #include <texture2d.hpp>
@@ -22,7 +24,11 @@
 #include <ImGuizmo.h>
 #include <game.hpp>
 #include <font.hpp>
+#ifdef WIN32
 #include <glfw/glfw3.h>
+#else
+#include <GLFW/glfw3.h>
+#endif
 #include <chrono>
 #include <thread>
 #include <time.h>
@@ -125,7 +131,9 @@ void InitEditor() {
     editor.SetPalette(editor.GetLightPalette());
 }
 
-std::string RunCommandAndCaptureOutput(const char* command) {
+std::string RunCommandAndCaptureOutput(const char* command)
+{
+#ifdef WIN32
     std::string result;
     HANDLE hRead, hWrite;
     SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
@@ -166,6 +174,22 @@ std::string RunCommandAndCaptureOutput(const char* command) {
     CloseHandle(pi.hThread);
 
     return result;
+#else
+    std::string result;
+    std::array<char, 256> buffer;
+
+    // Open a pipe to the command
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command, "r"), pclose);
+    if (!pipe) {
+        return "Failed to run command\n";
+    }
+
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+
+    return result;
+#endif
 }
 
 void RenderAnsiColoredText(const std::string& ansiText) {
@@ -288,7 +312,7 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
     ImGui::SetWindowPos(ImVec2(window.getWindowWidth() / 2, 0));
     ImGui::PushFont(fontSml);
     if (ImGui::Button("run", ImVec2(48, 36))) {
-        save_string_to_file("tiledgame.tile", editor.GetText());
+        save_string_to_file("./tiledgame.tile", editor.GetText());
         
         _log = RunCommandAndCaptureOutput("tile tiledgame.tile -o tiledgame");
         memset(progresses, 0.f, sizeof(float) * 11*11*11);
@@ -300,7 +324,7 @@ void RenderEditor(yt2d::Window& window, std::vector<GameObj>& objects, std::vect
                 for (size_t y = 0; y < 11; y++) {
                     for (size_t x = 0; x < 11; x++) {
                         tvm_t* vm = tvm_init();
-                        tvm_load_program_from_file(vm, "tiledgame.bin");
+                        tvm_load_program_from_file(vm, "./tiledgame.bin");
                         vm->gframe->global_vars[0].i32 = (x - 5);
                         vm->gframe->global_vars[1].i32 = (y - 5);
                         vm->gframe->global_vars[2].i32 = (z - 5);

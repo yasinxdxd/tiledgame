@@ -91,6 +91,8 @@ namespace yt2d
     };
 }
 
+
+
 namespace _priv::callbacks
 {
     static inline bool is_glfw_init = false;
@@ -104,6 +106,10 @@ namespace _priv::callbacks
     static void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
     static void glfw_window_focus_callback(GLFWwindow* window, int focused);
     static void glfw_window_always_focus_callback(GLFWwindow* window, int focused);
+#ifdef WIN32
+#else
+#define __stdcall
+#endif
     static void __stdcall gl_debug_callback(unsigned int source, unsigned int type, unsigned int id, unsigned int severity, int length, const char* message, const void* userParam);
 }
 

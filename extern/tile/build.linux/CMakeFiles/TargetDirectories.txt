@@ -1,0 +1,3 @@
+/home/yasinxdxd/Desktop/tile-lang/tiledgame/extern/tile/build.linux/CMakeFiles/TiledGameTVM_d.dir
+/home/yasinxdxd/Desktop/tile-lang/tiledgame/extern/tile/build.linux/CMakeFiles/edit_cache.dir
+/home/yasinxdxd/Desktop/tile-lang/tiledgame/extern/tile/build.linux/CMakeFiles/rebuild_cache.dir

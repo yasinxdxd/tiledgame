@@ -1,5 +1,9 @@
 #include <glad/glad.h>
+#ifdef WIN32
 #include <glfw/glfw3.h>
+#else
+#include <GLFW/glfw3.h>
+#endif
 #include <imgui.h> // Ensure ImGui is included for GetIO()
 #include <imgui_impl_glfw.h>
 #include <Window.hpp>

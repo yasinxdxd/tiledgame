@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC  -g -shared -Wl,-soname,libTiledGameTVM_d.so -o Debug/libTiledGameTVM_d.so CMakeFiles/TiledGameTVM_d.dir/tci.c.o CMakeFiles/TiledGameTVM_d.dir/tvm.c.o  -lffi 
